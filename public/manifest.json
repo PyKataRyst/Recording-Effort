@@ -1,0 +1,17 @@
+{
+    "name": "Recording Effort",
+    "short_name": "Effort",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#059669",
+    "orientation": "portrait",
+    "icons": [
+        {
+            "src": "/pwa-icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}
