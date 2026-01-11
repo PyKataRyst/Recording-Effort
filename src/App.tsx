@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { Play, Pause, Save, Trash2, Download, Trash, CheckCircle2, Clock, Moon, Sun, BarChart3, Hash, RotateCcw } from 'lucide-react'
+import { Play, Pause, Save, Trash2, Download, Trash, CheckCircle2, Clock, Moon, Sun, BarChart3, RotateCcw } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { SafeStorage } from './utils/SafeStorage'
 
 // --- Utils ---
@@ -19,6 +20,9 @@ function formatTime(ms: number): string {
 
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${pad(Math.floor(milliseconds / 10), 2)}`
 }
+
+
+
 
 function formatDurationShort(ms: number): string {
   const hours = Math.floor(ms / 3600000)
@@ -278,36 +282,62 @@ function useHistory() {
 
   // Stats Logic
   const getStats = useCallback(() => {
-    const today = new Date().toISOString().slice(0, 10)
+    // Generate date keys for the last 30 days
+    const daysToShow = 30
+    const dateKeys: string[] = []
+    for (let i = daysToShow - 1; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(new Date().getDate() - i)
+      dateKeys.push(d.toISOString().slice(0, 10))
+    }
 
-    // Most recent unique task names (top 5 by usage freq)
+    // Identify top tasks (top 5 by total duration)
+    const taskTotalDurations: { [key: string]: number } = {}
+    records.forEach(r => {
+      taskTotalDurations[r.taskName] = (taskTotalDurations[r.taskName] || 0) + r.duration
+    })
+
+    // Create sorted summary array
+    const taskSummaries = Object.entries(taskTotalDurations)
+      .map(([name, totalDuration]) => ({ name, totalDuration }))
+      .sort((a, b) => b.totalDuration - a.totalDuration)
+
+    const topTasks = taskSummaries
+      .slice(0, 5)
+      .map(t => t.name)
+
+    // Build chart data
+    const chartData = dateKeys.map(date => {
+      const point: any = { date }
+      topTasks.forEach(task => {
+        point[task] = 0
+      })
+      return point
+    })
+
+    records.forEach(r => {
+      const dataPoint = chartData.find(d => d.date === r.date)
+      if (dataPoint && topTasks.includes(r.taskName)) {
+        // Convert ms to minutes
+        dataPoint[r.taskName] += r.duration / 60000
+      }
+    })
+
+    // Most recent unique task names (top 8 by usage freq) for shortcuts
     const taskCounts: { [key: string]: number } = {}
     records.forEach(r => {
       taskCounts[r.taskName] = (taskCounts[r.taskName] || 0) + 1
     })
     const frequentTasks = Object.entries(taskCounts)
-      .sort((a, b) => b[1] - a[1]) // Sort by count desc
-      .slice(0, 8) // Top 8
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
       .map(([name]) => name)
-
-    const todayTotal = records
-      .filter(r => r.date === today)
-      .reduce((acc, curr) => acc + curr.duration, 0)
-
-    const overallTotal = records
-      .reduce((acc, curr) => acc + curr.duration, 0)
-
-    // Group by Task Name for Stats
-    const byTask: { [key: string]: number } = {}
-    records.forEach(r => {
-      byTask[r.taskName] = (byTask[r.taskName] || 0) + r.duration
-    })
 
     return {
       frequentTasks,
-      todayTotal,
-      overallTotal,
-      byTask
+      chartData,
+      topTasks,
+      taskSummaries
     }
   }, [records])
 
@@ -518,15 +548,134 @@ function HistoryTable({ records, onDelete, onClear, onExport }: HistoryTableProp
   )
 }
 
-function StatCard({ label, value, subtext }: { label: string, value: string, subtext?: string }) {
+function TaskSummaryCards({ summaries }: { summaries: { name: string, totalDuration: number }[] }) {
+  // Colors for styling - simple cycling or hashing could differ from chart but totally fine
+  const gradients = [
+    "from-emerald-500/20 to-teal-500/5 hover:to-teal-500/10 border-emerald-500/20",
+    "from-blue-500/20 to-indigo-500/5 hover:to-indigo-500/10 border-blue-500/20",
+    "from-amber-500/20 to-orange-500/5 hover:to-orange-500/10 border-amber-500/20",
+    "from-rose-500/20 to-pink-500/5 hover:to-pink-500/10 border-rose-500/20",
+    "from-violet-500/20 to-purple-500/5 hover:to-purple-500/10 border-violet-500/20",
+  ]
+
   return (
-    <div className="bg-card p-4 rounded-xl border border-border shadow-sm flex flex-col items-center text-center">
-      <div className="text-muted-foreground text-sm font-medium uppercase tracking-wider">{label}</div>
-      <div className="text-3xl font-bold text-foreground mt-2 tracking-tight">{value}</div>
-      {subtext && <div className="text-xs text-muted-foreground mt-1">{subtext}</div>}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
+      {summaries.map((task, index) => {
+        const style = gradients[index % gradients.length]
+        return (
+          <div
+            key={task.name}
+            className={cn(
+              "rounded-2xl p-5 border backdrop-blur-sm shadow-sm transition-all hover:scale-[1.02] hover:shadow-md bg-gradient-to-br",
+              style
+            )}
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-background/80 p-2 rounded-lg shadow-sm">
+                <BarChart3 className="w-4 h-4 text-foreground/80" />
+              </div>
+              <h3 className="font-semibold tracking-tight text-sm text-foreground/90 truncate flex-1" title={task.name}>
+                {task.name}
+              </h3>
+            </div>
+
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-2xl font-black tabular-nums tracking-tighter">
+                {formatDurationShort(task.totalDuration).split(' ')[0]}
+              </span>
+              <span className="text-sm text-muted-foreground font-medium">
+                {formatDurationShort(task.totalDuration).split(' ')[1]}
+              </span>
+            </div>
+            <div className="text-[10px] uppercase font-bold text-muted-foreground mt-1 opacity-70 tracking-widest">
+              Total Duration
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
+
+function EffortTrendChart({ data, tasks }: { data: any[], tasks: string[] }) {
+  // Safe colors even if many tasks
+  const colors = [
+    "#10b981", // Emerald
+    "#3b82f6", // Blue
+    "#f59e0b", // Amber
+    "#ef4444", // Red
+    "#8b5cf6", // Violet
+    "#ec4899", // Pink
+    "#06b6d4", // Cyan
+    "#84cc16", // Lime
+  ]
+
+  return (
+    <div className="w-full h-[500px] bg-card/ border border-border rounded-2xl p-2 sm:p-6 shadow-sm flex flex-col">
+      <h3 className="text-lg font-bold mb-6 text-center flex items-center justify-center gap-2">
+        <Clock className="w-5 h-5 text-primary" />
+        30-Day Effort Trends (Minutes)
+      </h3>
+      <div className="flex-1 min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 10, right: 30, bottom: 10, left: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-border/20" vertical={false} />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: 'currentColor', fontSize: 12 }}
+              className="text-muted-foreground/70"
+              tickFormatter={(value) => value.slice(5)}
+              tickMargin={10}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fill: 'currentColor', fontSize: 12 }}
+              className="text-muted-foreground/70"
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(value) => `${value}m`}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                borderColor: 'hsl(var(--border))',
+                borderRadius: '12px',
+                color: 'hsl(var(--foreground))',
+                boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                padding: '12px'
+              }}
+              itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '0.9rem', fontWeight: 500 }}
+              labelStyle={{ color: 'hsl(var(--muted-foreground))', marginBottom: '8px', fontSize: '0.8rem' }}
+              formatter={(value: any) => [`${Math.floor(Number(value))} min`, '']}
+              labelFormatter={(label) => `Date: ${label}`}
+              cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 2, opacity: 0.5 }}
+            />
+            <Legend
+              verticalAlign="bottom"
+              height={36}
+              iconType="circle"
+            />
+            {tasks.map((task, index) => (
+              <Line
+                key={task}
+                type="monotone"
+                dataKey={task}
+                stroke={colors[index % colors.length]}
+                activeDot={{ r: 6, strokeWidth: 0 }}
+                strokeWidth={3}
+                dot={false}
+                connectNulls
+                animationDuration={1500}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
 
 // --- Main App Component ---
 function App() {
@@ -708,41 +857,21 @@ function App() {
           </>
         ) : (
           <div className="animate-in fade-in slide-in-from-right-4 duration-500 space-y-8">
-            <h2 className="text-2xl font-bold tracking-tight text-center">Dashboard</h2>
+            <div className="w-full flex flex-col gap-6">
+              <h2 className="text-2xl font-bold tracking-tight text-center">Your Progress Dashboard</h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <StatCard
-                label="Today's Total"
-                value={formatDurationShort(stats.todayTotal)}
-                subtext="Great job today!"
-              />
-              <StatCard
-                label="All Time Total"
-                value={formatDurationShort(stats.overallTotal)}
-                subtext={`Across ${records.length} sessions`}
-              />
-              <StatCard
-                label="Most Frequent Task"
-                value={stats.frequentTasks[0] || "-"}
-                subtext="Keep it up!"
-              />
-            </div>
+              {stats.taskSummaries.length > 0 && (
+                <TaskSummaryCards summaries={stats.taskSummaries} />
+              )}
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Hash className="w-4 h-4" />
-                Task Breakdown (All Time)
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {Object.entries(stats.byTask)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(([name, duration]) => (
-                    <div key={name} className="flex items-center justify-between p-4 bg-card border border-border rounded-lg">
-                      <span className="font-medium truncate mr-4" title={name}>{name}</span>
-                      <span className="text-muted-foreground tabular-nums font-mono text-sm">{formatDurationShort(duration)}</span>
-                    </div>
-                  ))}
-              </div>
+              {stats.topTasks.length === 0 ? (
+                <div className="text-center text-muted-foreground py-12 bg-card/50 rounded-2xl border border-border/50">
+                  <p className="text-lg">No activity yet.</p>
+                  <p className="text-sm">Start a task to see your trends graph!</p>
+                </div>
+              ) : (
+                <EffortTrendChart data={stats.chartData} tasks={stats.topTasks} />
+              )}
             </div>
           </div>
         )}
