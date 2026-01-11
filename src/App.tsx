@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Play, Pause, Square, Flag, Save, Trash2, Download, Trash, CheckCircle2, Clock, History as HistoryIcon, Moon, Sun, BarChart3, List, Hash, Calendar, RotateCcw } from 'lucide-react'
+import { SafeStorage } from './utils/SafeStorage'
 
 // --- Utils ---
 function cn(...inputs: ClassValue[]) {
@@ -70,7 +71,7 @@ function useTimer() {
 
   // Restore state on mount
   useEffect(() => {
-    const saved = localStorage.getItem(TIMER_KEY)
+    const saved = SafeStorage.getItem(TIMER_KEY)
     if (saved) {
       try {
         const { isRunning: savedIsRunning, baseTime, pausedTime } = JSON.parse(saved)
@@ -132,7 +133,7 @@ function useTimer() {
       const baseTime = now - prev
       startTimeRef.current = baseTime
 
-      localStorage.setItem(TIMER_KEY, JSON.stringify({
+      SafeStorage.setItem(TIMER_KEY, JSON.stringify({
         isRunning: true,
         baseTime: baseTime
       }))
@@ -151,7 +152,7 @@ function useTimer() {
     if (startTimeRef.current) {
       const elapsed = Date.now() - startTimeRef.current
       setTime(elapsed)
-      localStorage.setItem(TIMER_KEY, JSON.stringify({
+      SafeStorage.setItem(TIMER_KEY, JSON.stringify({
         isRunning: false,
         pausedTime: elapsed
       }))
@@ -167,7 +168,7 @@ function useTimer() {
     setIsRunning(false)
     setTime(0)
     startTimeRef.current = null
-    localStorage.removeItem(TIMER_KEY)
+    SafeStorage.removeItem(TIMER_KEY)
     updateMediaSession(0, false)
 
     if (audioRef.current) {
@@ -206,7 +207,7 @@ function useHistory() {
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const saved = SafeStorage.getItem(STORAGE_KEY)
     if (saved) {
       try {
         setRecords(JSON.parse(saved))
@@ -219,7 +220,7 @@ function useHistory() {
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(records))
+      SafeStorage.setItem(STORAGE_KEY, JSON.stringify(records))
     }
   }, [records, isLoaded])
 
@@ -329,7 +330,7 @@ function useTheme() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+    const savedTheme = SafeStorage.getItem('theme') as 'light' | 'dark' | null
     if (savedTheme) {
       setTheme(savedTheme)
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -341,7 +342,7 @@ function useTheme() {
     const root = window.document.documentElement
     root.classList.remove('light', 'dark')
     root.classList.add(theme)
-    localStorage.setItem('theme', theme)
+    SafeStorage.setItem('theme', theme)
   }, [theme])
 
   const toggleTheme = useCallback(() => {
@@ -541,13 +542,13 @@ function App() {
   const { time, isRunning, start, pause, reset, getLap } = useTimer()
   const { records, addRecord, deleteRecord, clearHistory, exportCSV, getStats } = useHistory()
   const { theme, toggleTheme } = useTheme()
-  const [taskName, setTaskName] = useState(() => localStorage.getItem('current-task-name') || "Focus Time")
+  const [taskName, setTaskName] = useState(() => SafeStorage.getItem('current-task-name') || "Focus Time")
   const [laps, setLaps] = useState<number[]>([])
   const [showToast, setShowToast] = useState(false)
   const [activeTab, setActiveTab] = useState<'record' | 'stats'>('record')
 
   useEffect(() => {
-    localStorage.setItem('current-task-name', taskName)
+    SafeStorage.setItem('current-task-name', taskName)
   }, [taskName])
 
   const stats = useMemo(() => getStats(), [getStats, records])
