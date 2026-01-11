@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { Play, Pause, Square, Flag, Save, Trash2, Download, Trash, CheckCircle2, Clock, History as HistoryIcon, Moon, Sun, BarChart3, List, Hash, Calendar, RotateCcw } from 'lucide-react'
+import { Play, Pause, Save, Trash2, Download, Trash, CheckCircle2, Clock, Moon, Sun, BarChart3, Hash, RotateCcw } from 'lucide-react'
 import { SafeStorage } from './utils/SafeStorage'
 
 // --- Utils ---
@@ -177,17 +177,14 @@ function useTimer() {
     }
   }, [updateMediaSession])
 
-  const getLap = useCallback(() => {
-    return startTimeRef.current ? Date.now() - startTimeRef.current : time
-  }, [time])
+
 
   return {
     time,
     isRunning,
     start,
     pause,
-    reset,
-    getLap
+    reset
   }
 }
 
@@ -197,7 +194,6 @@ interface Record {
   startTime: string
   taskName: string
   duration: number
-  laps: number[]
 }
 
 const STORAGE_KEY = 'recording-effort-history'
@@ -256,14 +252,13 @@ function useHistory() {
   const exportCSV = useCallback(() => {
     if (records.length === 0) return
 
-    const headers = ['Date', 'Start Time', 'Task Name', 'Duration (ms)', 'Duration (Formatted)', 'Laps Count']
+    const headers = ['Date', 'Start Time', 'Task Name', 'Duration (ms)', 'Duration (Formatted)']
     const rows = records.map(r => [
       r.date,
       r.startTime,
       `"${r.taskName.replace(/"/g, '""')}"`,
       r.duration,
-      new Date(r.duration).toISOString().substr(11, 8),
-      r.laps.length
+      new Date(r.duration).toISOString().substr(11, 8)
     ])
 
     const csvContent = [
@@ -383,7 +378,6 @@ interface TimerControlsProps {
   onStart: () => void
   onPause: () => void
   onReset: () => void
-  onLap: () => void
   onRecord: () => void
   hasTime: boolean
 }
@@ -393,7 +387,6 @@ function TimerControls({
   onStart,
   onPause,
   onReset,
-  onLap,
   onRecord,
   hasTime
 }: TimerControlsProps) {
@@ -488,8 +481,7 @@ function HistoryTable({ records, onDelete, onClear, onExport }: HistoryTableProp
                 <th className="px-4 py-3">Start</th>
                 <th className="px-4 py-3 min-w-[150px]">Task Name</th>
                 <th className="px-4 py-3 text-right">Duration</th>
-                <th className="px-4 py-3 text-right">Laps</th>
-                <th className="px-4 py-3 text-5 w-[50px]"></th>
+                <th className="px-5 py-3 w-[50px]"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -506,7 +498,6 @@ function HistoryTable({ records, onDelete, onClear, onExport }: HistoryTableProp
                     <td className="px-4 py-3 whitespace-nowrap text-muted-foreground font-mono">{record.startTime}</td>
                     <td className="px-4 py-3 font-medium">{record.taskName}</td>
                     <td className="px-4 py-3 text-right font-mono tabular-nums">{formatTime(record.duration)}</td>
-                    <td className="px-4 py-3 text-right text-muted-foreground">{record.laps.length}</td>
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => onDelete(record.id)}
@@ -539,11 +530,10 @@ function StatCard({ label, value, subtext }: { label: string, value: string, sub
 
 // --- Main App Component ---
 function App() {
-  const { time, isRunning, start, pause, reset, getLap } = useTimer()
+  const { time, isRunning, start, pause, reset } = useTimer()
   const { records, addRecord, deleteRecord, clearHistory, exportCSV, getStats } = useHistory()
   const { theme, toggleTheme } = useTheme()
   const [taskName, setTaskName] = useState(() => SafeStorage.getItem('current-task-name') || "Focus Time")
-  const [laps, setLaps] = useState<number[]>([])
   const [showToast, setShowToast] = useState(false)
   const [activeTab, setActiveTab] = useState<'record' | 'stats'>('record')
 
@@ -560,14 +550,8 @@ function App() {
     }
   }, [showToast])
 
-  const handleLap = useCallback(() => {
-    const lapTime = getLap()
-    setLaps(prev => [...prev, lapTime])
-  }, [getLap])
-
   const handleReset = useCallback(() => {
     reset()
-    setLaps([])
   }, [reset])
 
   const handleRecord = useCallback(() => {
@@ -584,14 +568,12 @@ function App() {
       date: dateStr,
       startTime: startTimeStr,
       taskName: taskName || "Untitled Task",
-      duration: time,
-      laps: laps
+      duration: time
     })
 
     setShowToast(true)
     reset()
-    setLaps([])
-  }, [time, pause, taskName, laps, addRecord, reset])
+  }, [time, pause, taskName, addRecord, reset])
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors duration-300 relative overflow-hidden selection:bg-primary/20">
@@ -708,27 +690,9 @@ function App() {
                 onStart={start}
                 onPause={pause}
                 onReset={handleReset}
-                onLap={handleLap}
                 onRecord={handleRecord}
                 hasTime={time > 0}
               />
-
-              {laps.length > 0 && (
-                <div className="w-full max-w-md bg-muted/30 rounded-lg p-4 text-sm text-muted-foreground max-h-32 overflow-y-auto border border-border">
-                  <div className="font-medium mb-2 text-foreground flex items-center gap-2">
-                    <HistoryIcon className="w-3 h-3" />
-                    Session Laps ({laps.length})
-                  </div>
-                  <ul className="space-y-1">
-                    {laps.map((lap, i) => (
-                      <li key={i} className="flex justify-between border-b border-border/50 last:border-0 pb-1 last:pb-0">
-                        <span>Lap {i + 1}</span>
-                        <span className="font-mono">{new Date(lap).toISOString().slice(11, 23)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </section>
 
             <div className="w-full h-px bg-border" />
