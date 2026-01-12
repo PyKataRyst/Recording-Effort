@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { Play, Pause, Save, Trash2, Download, Trash, CheckCircle2, Clock, Moon, Sun, BarChart3, RotateCcw } from 'lucide-react'
+import { Play, Pause, Save, Trash2, Download, Trash, CheckCircle2, Clock, Moon, Sun, BarChart3, RotateCcw, Share2 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { SafeStorage } from './utils/SafeStorage'
 
@@ -708,7 +708,7 @@ function App() {
   const { records, addRecord, deleteRecord, clearHistory, exportCSV, getStats } = useHistory()
   const { theme, toggleTheme } = useTheme()
   const [taskName, setTaskName] = useState(() => SafeStorage.getItem('current-task-name') || "Focus Time")
-  const [showToast, setShowToast] = useState(false)
+  const [toast, setToast] = useState<{ show: boolean, message: string }>({ show: false, message: '' })
   const [activeTab, setActiveTab] = useState<'record' | 'stats'>('record')
 
   useEffect(() => {
@@ -718,11 +718,11 @@ function App() {
   const stats = useMemo(() => getStats(), [getStats, records])
 
   useEffect(() => {
-    if (showToast) {
-      const timer = setTimeout(() => setShowToast(false), 3000)
+    if (toast.show) {
+      const timer = setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000)
       return () => clearTimeout(timer)
     }
-  }, [showToast])
+  }, [toast.show])
 
   const handleReset = useCallback(() => {
     reset()
@@ -745,9 +745,33 @@ function App() {
       duration: time
     })
 
-    setShowToast(true)
+    setToast({ show: true, message: 'Effort Recorded!' })
     reset()
   }, [time, pause, taskName, addRecord, reset])
+
+  const handleShare = useCallback(async () => {
+    const shareData = {
+      title: 'Recording Effort',
+      text: '日々の努力を記録するシンプルなアプリ。',
+      url: window.location.href
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+      } catch (err) {
+        // User cancelled or share failed, ignore
+      }
+    } else {
+      // Fallback
+      try {
+        await navigator.clipboard.writeText(window.location.href)
+        setToast({ show: true, message: 'Copied to clipboard!' })
+      } catch (err) {
+        console.error('Failed to copy', err)
+      }
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors duration-300 relative overflow-hidden selection:bg-primary/20">
@@ -759,12 +783,12 @@ function App() {
       {/* Toast */}
       <div className={cn(
         "fixed top-4 right-4 z-50 flex items-center gap-3 px-6 py-4 bg-card/80 backdrop-blur-md text-foreground border border-border/50 rounded-2xl shadow-2xl transform transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)",
-        showToast ? "translate-y-0 opacity-100 scale-100" : "-translate-y-8 opacity-0 pointer-events-none scale-95"
+        toast.show ? "translate-y-0 opacity-100 scale-100" : "-translate-y-8 opacity-0 pointer-events-none scale-95"
       )}>
         <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-none">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
         </div>
-        <span className="font-bold tracking-tight">Effort Recorded!</span>
+        <span className="font-bold tracking-tight">{toast.message}</span>
       </div>
 
       <header className="p-4 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 transition-colors duration-300">
@@ -888,6 +912,18 @@ function App() {
           </div>
         )}
       </main>
+
+      {/* Footer with Share */}
+      <footer className="p-6 text-center text-sm text-muted-foreground/60 pb-8 sm:pb-6">
+        <button
+          onClick={handleShare}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full hover:bg-muted/50 transition-colors duration-200 group"
+          title="Share this app"
+        >
+          <Share2 className="w-4 h-4 group-hover:text-primary transition-colors" />
+          <span className="group-hover:text-foreground transition-colors">Share this App</span>
+        </button>
+      </footer>
     </div>
   )
 }
