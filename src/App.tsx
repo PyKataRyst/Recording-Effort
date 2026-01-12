@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { Play, Pause, Save, Trash2, Download, Trash, CheckCircle2, Clock, Moon, Sun, BarChart3, RotateCcw, Share2 } from 'lucide-react'
+import { Play, Pause, Save, Trash2, Download, Trash, CheckCircle2, Clock, Moon, Sun, BarChart3, RotateCcw, Share2, Info, X } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { SafeStorage } from './utils/SafeStorage'
 
@@ -702,6 +702,66 @@ function EffortTrendChart({ data, tasks }: { data: any[], tasks: string[] }) {
 }
 
 
+function AboutModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+  if (!isOpen) return null
+
+  const history = [
+    { version: "v1.0", title: "誕生", description: "React + Tailwind CSSによるモダンなグラスモーフィズムUIの実装。ローカルストレージによるプライバシー重視のデータ保存。" },
+    { version: "v1.1", title: "スマホ最適化", description: "PWA対応。バックグラウンドでのタイマー動作を改善。" },
+    { version: "v1.2", title: "分析機能の進化", description: "棒グラフによる「努力の可視化」を導入。" },
+    { version: "v1.3", title: "パーソナライズ・ダッシュボード", description: "タスク別の「今日・合計・平均」を表示する3点スコアカードを実装。" },
+    { version: "v1.4", title: "集中と共有", description: "計測中の没入型フォーカスモードと、友人へのシェア機能を追加。" },
+  ]
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-lg bg-card/90 backdrop-blur-xl border border-border/50 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 relative">
+        {/* Header */}
+        <div className="p-6 border-b border-border/50 flex items-center justify-between sticky top-0 bg-card/50 backdrop-blur-md z-10">
+          <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+            <Info className="w-5 h-5 text-primary" />
+            Recording Effort の歩み
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-muted/50 rounded-full transition-colors">
+            <X className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+          <div className="mb-8">
+            <p className="text-lg font-medium text-foreground/90 leading-relaxed italic">
+              「日々の小さな努力を、確かな記録に。」
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              このアプリは、シンプルさと集中を追求して開発されました。
+            </p>
+          </div>
+
+          <div className="relative pl-4 border-l-2 border-primary/20 space-y-8">
+            {history.map((item, index) => (
+              <div key={index} className="relative">
+                <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-background border-2 border-primary my-auto" />
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wider">
+                      {item.version}
+                    </span>
+                    <span className="font-bold text-foreground/90">{item.title}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground/80 leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // --- Main App Component ---
 function App() {
   const { time, isRunning, start, pause, reset } = useTimer()
@@ -709,6 +769,7 @@ function App() {
   const { theme, toggleTheme } = useTheme()
   const [taskName, setTaskName] = useState(() => SafeStorage.getItem('current-task-name') || "Focus Time")
   const [toast, setToast] = useState<{ show: boolean, message: string }>({ show: false, message: '' })
+  const [showAbout, setShowAbout] = useState(false)
   const [activeTab, setActiveTab] = useState<'record' | 'stats'>('record')
 
   useEffect(() => {
@@ -791,6 +852,8 @@ function App() {
         <span className="font-bold tracking-tight">{toast.message}</span>
       </div>
 
+      <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
+
       <header className="p-4 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10 transition-colors duration-300">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -798,6 +861,13 @@ function App() {
             <h1 className="text-xl font-bold tracking-tight">Recording Effort</h1>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowAbout(true)}
+              className="p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-all"
+              title="About this app"
+            >
+              <Info className="w-5 h-5" />
+            </button>
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-all"
