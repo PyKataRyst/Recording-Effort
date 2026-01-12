@@ -32,31 +32,30 @@ function formatDurationShort(ms: number): string {
 
 // --- Hooks ---
 const TIMER_KEY = 'timer-state'
-const SILENT_AUDIO_URI = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA'
+
 
 function useTimer() {
   const [time, setTime] = useState(0)
   const [isRunning, setIsRunning] = useState(false)
   const startTimeRef = useRef<number | null>(null)
   const intervalRef = useRef<number | null>(null)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Initialize Audio for Lock Screen support
+  // Calculate elapsed time helper
+  const updateTime = useCallback(() => {
+    if (startTimeRef.current) {
+      const now = Date.now()
+      const elapsed = now - startTimeRef.current
+      setTime(elapsed)
+      return elapsed
+    }
+    return 0
+  }, [])
+
+  // Initialize Media Session for Lock Screen support (simulated, works best with active audio but we try without blocking)
   useEffect(() => {
-    audioRef.current = new Audio(SILENT_AUDIO_URI)
-    audioRef.current.loop = true
-
-    // Setup Media Session handlers
     if ('mediaSession' in navigator) {
       navigator.mediaSession.setActionHandler('play', () => start())
       navigator.mediaSession.setActionHandler('pause', () => pause())
-    }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current = null
-      }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -97,39 +96,39 @@ function useTimer() {
     }
   }, [updateMediaSession])
 
-  // Timer Interval
+  // Timer Interval & Visibility Handling
   useEffect(() => {
     if (isRunning) {
       if (!startTimeRef.current) {
         startTimeRef.current = Date.now() - time
       }
 
-      // Ensure audio is playing
-      if (audioRef.current && audioRef.current.paused) {
-        audioRef.current.play().catch(e => console.log("Audio play failed (interaction needed)", e))
-      }
-
       intervalRef.current = window.setInterval(() => {
-        const now = Date.now()
-        const elapsed = now - (startTimeRef.current || 0)
-        setTime(elapsed)
+        const elapsed = updateTime()
         // Update lock screen every second roughly
         if (Math.floor(elapsed / 1000) > Math.floor(((elapsed - 50) / 1000))) {
           updateMediaSession(elapsed, true)
         }
       }, 50)
+
+      // Re-sync on visibility change to catch up if interval was throttled
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          updateTime()
+        }
+      }
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+
+      return () => {
+        if (intervalRef.current) clearInterval(intervalRef.current)
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+      }
     } else {
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
       }
-      if (audioRef.current) {
-        audioRef.current.pause()
-      }
     }
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [isRunning, updateMediaSession])
+  }, [isRunning, updateMediaSession, updateTime])
 
   const start = useCallback(() => {
     setTime(prev => {
@@ -144,29 +143,19 @@ function useTimer() {
       return prev
     })
     setIsRunning(true)
-
-    // Play silent audio to keep background alive
-    if (audioRef.current) {
-      audioRef.current.play().catch(e => console.error("Play error", e))
-    }
   }, [])
 
   const pause = useCallback(() => {
     setIsRunning(false)
     if (startTimeRef.current) {
-      const elapsed = Date.now() - startTimeRef.current
-      setTime(elapsed)
+      const elapsed = updateTime()
       SafeStorage.setItem(TIMER_KEY, JSON.stringify({
         isRunning: false,
         pausedTime: elapsed
       }))
       updateMediaSession(elapsed, false)
     }
-
-    if (audioRef.current) {
-      audioRef.current.pause()
-    }
-  }, [updateMediaSession])
+  }, [updateMediaSession, updateTime])
 
   const reset = useCallback(() => {
     setIsRunning(false)
@@ -174,11 +163,6 @@ function useTimer() {
     startTimeRef.current = null
     SafeStorage.removeItem(TIMER_KEY)
     updateMediaSession(0, false)
-
-    if (audioRef.current) {
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
-    }
   }, [updateMediaSession])
 
 
