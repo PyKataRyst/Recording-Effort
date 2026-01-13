@@ -566,7 +566,7 @@ function TaskSummaryCards({ summaries }: { summaries: { name: string, totalDurat
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
       {summaries.map((task, index) => {
         const style = gradients[index % gradients.length]
         const hasActivityToday = task.todayDuration > 0
@@ -575,44 +575,43 @@ function TaskSummaryCards({ summaries }: { summaries: { name: string, totalDurat
           <div
             key={task.name}
             className={cn(
-              "rounded-2xl p-5 border backdrop-blur-sm shadow-sm transition-all hover:scale-[1.02] hover:shadow-md bg-gradient-to-br flex flex-col gap-4",
+              "rounded-3xl p-8 border backdrop-blur-sm shadow-sm transition-all hover:scale-[1.03] hover:shadow-xl bg-gradient-to-br flex flex-col items-center justify-center text-center gap-6 group",
               style
             )}
           >
             {/* Header */}
-            <div className="flex items-center gap-3">
-              <div className="bg-background/80 p-2 rounded-lg shadow-sm">
-                <BarChart3 className="w-4 h-4 text-foreground/80" />
-              </div>
-              <h3 className="font-semibold tracking-tight text-sm text-foreground/90 truncate flex-1" title={task.name}>
-                {task.name}
-              </h3>
-            </div>
+            <h3 className="text-2xl font-bold tracking-tight text-foreground/90 group-hover:text-foreground transition-colors" title={task.name}>
+              {task.name}
+            </h3>
 
             {/* Main Highlight: Today */}
-            <div className="space-y-1">
-              <div className="text-[10px] uppercase font-bold text-muted-foreground opacity-90 tracking-widest flex items-center gap-2">
-                Today <span className={cn("w-1.5 h-1.5 rounded-full inline-block", hasActivityToday ? "bg-primary/70 animate-pulse" : "bg-muted")} />
+            <div className="space-y-2 w-full">
+              <div className="text-xs uppercase font-extrabold text-muted-foreground opacity-80 tracking-[0.2em] flex items-center justify-center gap-2">
+                TODAY
+                {hasActivityToday && <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
               </div>
               <div className={cn(
-                "text-3xl font-black tabular-nums tracking-tighter",
-                hasActivityToday ? "text-foreground" : "text-muted-foreground/40"
+                "text-5xl md:text-6xl font-black tabular-nums tracking-tighter transition-all duration-300",
+                hasActivityToday
+                  ? "text-foreground drop-shadow-sm scale-105"
+                  : "text-muted-foreground/30 scale-100"
               )}>
-                {hasActivityToday ? formatDurationShort(task.todayDuration) : "No activity"}
+                {formatDurationShort(task.todayDuration)}
               </div>
             </div>
 
-            <div className="h-px bg-foreground/10 w-full" />
+            <div className="h-px bg-foreground/10 w-2/3" />
 
             {/* Sub Stats: Total & Avg */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <div className="text-muted-foreground/70 font-medium mb-0.5">Total</div>
-                <div className="font-bold tabular-nums text-foreground/80">{formatDurationShort(task.totalDuration)}</div>
+            <div className="flex items-center justify-center gap-8 text-sm w-full">
+              <div className="flex flex-col items-center gap-1">
+                <div className="text-muted-foreground/70 font-semibold text-xs uppercase tracking-wider">Total</div>
+                <div className="font-bold tabular-nums text-foreground/80 text-base">{formatDurationShort(task.totalDuration)}</div>
               </div>
-              <div className="text-right">
-                <div className="text-muted-foreground/70 font-medium mb-0.5">Daily Avg</div>
-                <div className="font-bold tabular-nums text-foreground/80">{formatDurationShort(task.averageDuration || 0)}</div>
+              <div className="w-px h-8 bg-foreground/10" />
+              <div className="flex flex-col items-center gap-1">
+                <div className="text-muted-foreground/70 font-semibold text-xs uppercase tracking-wider">Avg</div>
+                <div className="font-bold tabular-nums text-foreground/80 text-base">{formatDurationShort(task.averageDuration || 0)}</div>
               </div>
             </div>
           </div>
@@ -921,32 +920,29 @@ function App() {
         {activeTab === 'record' ? (
           <div className="w-full flex flex-col items-center gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Task Name Input */}
-            <div className="w-full max-w-md">
-              <label htmlFor="task-name" className="block text-sm font-medium text-muted-foreground mb-2 ml-1">
+            <div className="w-full max-w-3xl flex flex-col items-center">
+              <label htmlFor="task-name" className="text-xs font-bold text-muted-foreground/60 tracking-[0.2em] uppercase mb-4">
                 What are you working on?
               </label>
-              <div className="relative group">
+              <div className="relative w-full group text-center">
                 <input
                   id="task-name"
                   type="text"
                   value={taskName}
                   onChange={(e) => setTaskName(e.target.value)}
                   placeholder="e.g., Coding, Reading, Workout..."
-                  className="w-full px-4 py-3 bg-card border-2 border-border/50 rounded-xl focus:outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all text-lg font-medium placeholder:text-muted-foreground/50 shadow-sm group-hover:border-border/80"
+                  className="w-full text-center px-4 py-2 bg-transparent border-none rounded-xl focus:outline-none focus:ring-0 transition-all text-4xl md:text-5xl font-black placeholder:text-muted-foreground/10 placeholder:italic text-foreground/90 focus:text-foreground"
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/50 font-medium pointer-events-none border border-border/50 px-1.5 py-0.5 rounded-md bg-muted/20">
-                  TASK
-                </div>
               </div>
 
               {/* Quick Select Task Chips */}
               {stats.frequentTasks.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-6 flex flex-wrap justify-center gap-2">
                   {stats.frequentTasks.map(task => (
                     <button
                       key={task}
                       onClick={() => setTaskName(task)}
-                      className="text-xs px-2.5 py-1 rounded-full bg-accent/50 text-muted-foreground hover:text-accent-foreground hover:bg-accent border border-transparent hover:border-border transition-all"
+                      className="text-xs px-3 py-1.5 rounded-full bg-accent/30 text-muted-foreground hover:text-foreground hover:bg-accent/80 border border-transparent hover:border-border/50 transition-all font-medium"
                     >
                       {task}
                     </button>
