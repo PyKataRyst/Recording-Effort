@@ -566,7 +566,7 @@ function TaskSummaryCards({ summaries }: { summaries: { name: string, totalDurat
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 w-full">
       {summaries.map((task, index) => {
         const style = gradients[index % gradients.length]
         const hasActivityToday = task.todayDuration > 0
@@ -575,23 +575,23 @@ function TaskSummaryCards({ summaries }: { summaries: { name: string, totalDurat
           <div
             key={task.name}
             className={cn(
-              "rounded-3xl p-8 border backdrop-blur-sm shadow-sm transition-all hover:scale-[1.03] hover:shadow-xl bg-gradient-to-br flex flex-col items-center justify-center text-center gap-6 group",
+              "rounded-3xl p-3 md:p-8 border backdrop-blur-sm shadow-sm transition-all hover:scale-[1.03] hover:shadow-xl bg-gradient-to-br flex flex-col items-center justify-center text-center gap-2 md:gap-6 group",
               style
             )}
           >
             {/* Header */}
-            <h3 className="text-2xl font-bold tracking-tight text-foreground/90 group-hover:text-foreground transition-colors" title={task.name}>
+            <h3 className="text-sm md:text-2xl font-bold tracking-tight text-foreground/90 group-hover:text-foreground transition-colors truncate w-full px-1" title={task.name}>
               {task.name}
             </h3>
 
             {/* Main Highlight: Today */}
-            <div className="space-y-2 w-full">
-              <div className="text-xs uppercase font-extrabold text-muted-foreground opacity-80 tracking-[0.2em] flex items-center justify-center gap-2">
+            <div className="space-y-1 md:space-y-2 w-full">
+              <div className="text-[10px] md:text-xs uppercase font-extrabold text-muted-foreground opacity-80 tracking-[0.2em] flex items-center justify-center gap-1 md:gap-2">
                 TODAY
-                {hasActivityToday && <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
+                {hasActivityToday && <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary animate-pulse" />}
               </div>
               <div className={cn(
-                "text-5xl md:text-6xl font-black tabular-nums tracking-tighter transition-all duration-300",
+                "text-2xl sm:text-3xl md:text-6xl font-black tabular-nums tracking-tighter transition-all duration-300",
                 hasActivityToday
                   ? "text-foreground drop-shadow-sm scale-105"
                   : "text-muted-foreground/30 scale-100"
@@ -600,18 +600,18 @@ function TaskSummaryCards({ summaries }: { summaries: { name: string, totalDurat
               </div>
             </div>
 
-            <div className="h-px bg-foreground/10 w-2/3" />
+            <div className="h-px bg-foreground/10 w-2/3 hidden md:block" />
 
             {/* Sub Stats: Total & Avg */}
-            <div className="flex items-center justify-center gap-8 text-sm w-full">
-              <div className="flex flex-col items-center gap-1">
-                <div className="text-muted-foreground/70 font-semibold text-xs uppercase tracking-wider">Total</div>
-                <div className="font-bold tabular-nums text-foreground/80 text-base">{formatDurationShort(task.totalDuration)}</div>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-1 md:gap-8 text-[10px] md:text-sm w-full">
+              <div className="flex flex-col items-center gap-0 md:gap-1">
+                <div className="text-muted-foreground/70 font-semibold uppercase tracking-wider scale-90 md:scale-100">Total</div>
+                <div className="font-bold tabular-nums text-foreground/80 text-xs md:text-base">{formatDurationShort(task.totalDuration)}</div>
               </div>
-              <div className="w-px h-8 bg-foreground/10" />
-              <div className="flex flex-col items-center gap-1">
-                <div className="text-muted-foreground/70 font-semibold text-xs uppercase tracking-wider">Avg</div>
-                <div className="font-bold tabular-nums text-foreground/80 text-base">{formatDurationShort(task.averageDuration || 0)}</div>
+              <div className="w-px h-8 bg-foreground/10 hidden md:block" />
+              <div className="flex flex-col items-center gap-0 md:gap-1">
+                <div className="text-muted-foreground/70 font-semibold uppercase tracking-wider scale-90 md:scale-100">Avg</div>
+                <div className="font-bold tabular-nums text-foreground/80 text-xs md:text-base">{formatDurationShort(task.averageDuration || 0)}</div>
               </div>
             </div>
           </div>
