@@ -315,12 +315,18 @@ function useHistory() {
 
     // Create sorted summary array
     const taskSummaries = Object.entries(taskDetails)
-      .map(([name, details]) => ({
-        name,
-        totalDuration: details.totalDuration,
-        todayDuration: details.todayDuration,
-        averageDuration: details.activeDates.size > 0 ? details.totalDuration / details.activeDates.size : 0
-      }))
+      .map(([name, details]) => {
+        const isActiveToday = details.activeDates.has(todayStr)
+        const pastDaysCount = details.activeDates.size - (isActiveToday ? 1 : 0)
+        const pastTotalDuration = details.totalDuration - details.todayDuration
+
+        return {
+          name,
+          totalDuration: details.totalDuration,
+          todayDuration: details.todayDuration,
+          averageDuration: pastDaysCount > 0 ? pastTotalDuration / pastDaysCount : 0
+        }
+      })
       .sort((a, b) => b.totalDuration - a.totalDuration)
 
     const topTasks = taskSummaries
