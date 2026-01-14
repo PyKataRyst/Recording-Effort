@@ -30,6 +30,24 @@ function formatDurationShort(ms: number): string {
   return `${hours}h ${minutes}m`
 }
 
+/**
+ * Returns a date object adjusted by -4 hours to reflect the "business day".
+ * E.g., Jan 10 03:00 -> Jan 9 23:00 (counts as Jan 9)
+ *       Jan 10 05:00 -> Jan 10 01:00 (counts as Jan 10)
+ */
+function getBusinessDate(date: Date = new Date()): Date {
+  const adjusted = new Date(date)
+  adjusted.setHours(adjusted.getHours() - 4)
+  return adjusted
+}
+
+/**
+ * Returns the YYYY-MM-DD string for the current business day.
+ */
+function getBusinessDateStr(date: Date = new Date()): string {
+  return getBusinessDate(date).toLocaleDateString('sv')
+}
+
 // --- Hooks ---
 const TIMER_KEY = 'timer-state'
 
@@ -270,19 +288,15 @@ function useHistory() {
     const daysToShow = 30
     const dateKeys: string[] = []
     for (let i = daysToShow - 1; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(new Date().getDate() - i)
-      dateKeys.push(d.toISOString().slice(0, 10))
+      const d = getBusinessDate()
+      d.setDate(d.getDate() - i)
+      dateKeys.push(d.toLocaleDateString('sv'))
     }
 
     const taskDetails: { [key: string]: { totalDuration: number, todayDuration: number, activeDates: Set<string> } } = {}
 
-    // Helper to get local date string YYYY-MM-DD
-    const getTodayStr = () => {
-      const d = new Date()
-      return d.toLocaleDateString('sv') // 'sv' locale uses ISO format YYYY-MM-DD
-    }
-    const todayStr = getTodayStr()
+    // Helper to get local date string YYYY-MM-DD (Business Day)
+    const todayStr = getBusinessDateStr()
 
     records.forEach(r => {
       if (!taskDetails[r.taskName]) {
@@ -796,7 +810,8 @@ function App() {
     const now = new Date()
     const startTimeDate = new Date(now.getTime() - time)
     const startTimeStr = startTimeDate.toTimeString().slice(0, 5)
-    const dateStr = now.toISOString().slice(0, 10)
+    // Use business date (offsets 4AM)
+    const dateStr = getBusinessDateStr(now)
 
     addRecord({
       date: dateStr,
@@ -973,6 +988,11 @@ function App() {
           </div>
         ) : (
           <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-end px-4 -mb-4">
+              <span className="text-[10px] text-muted-foreground/60 font-medium italic">
+                * Day resets at 4:00 AM
+              </span>
+            </div>
             <TaskSummaryCards summaries={stats.taskSummaries} />
             <EffortTrendChart data={stats.chartData} tasks={stats.topTasks} />
           </div>
