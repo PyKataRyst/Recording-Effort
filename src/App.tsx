@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { Play, Pause, Save, Trash2, Download, Trash, CheckCircle2, Clock, Moon, Sun, BarChart3, RotateCcw, Share2, Info, X } from 'lucide-react'
+import { Play, Pause, Save, Trash2, Download, Trash, CheckCircle2, Clock, Moon, Sun, BarChart3, RotateCcw, Share2, Info, X, Pencil } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { SafeStorage } from './utils/SafeStorage'
 
@@ -255,6 +255,13 @@ function useHistory() {
     }
   }, [])
 
+  const renameTask = useCallback((oldName: string, newName: string) => {
+    if (!newName || newName.trim() === "") return
+    setRecords(prev => prev.map(r =>
+      r.taskName === oldName ? { ...r, taskName: newName.trim() } : r
+    ))
+  }, [])
+
   const exportCSV = useCallback(() => {
     if (records.length === 0) return
 
@@ -374,7 +381,8 @@ function useHistory() {
     deleteRecord,
     clearHistory,
     exportCSV,
-    getStats
+    getStats,
+    renameTask
   }
 }
 
@@ -575,7 +583,7 @@ function HistoryTable({ records, onDelete, onClear, onExport }: HistoryTableProp
   )
 }
 
-function TaskSummaryCards({ summaries }: { summaries: { name: string, totalDuration: number, todayDuration: number, averageDuration: number }[] }) {
+function TaskSummaryCards({ summaries, onRename }: { summaries: { name: string, totalDuration: number, todayDuration: number, averageDuration: number }[], onRename: (oldName: string, newName: string) => void }) {
   // Colors for styling - simple cycling or hashing could differ from chart but totally fine
   const gradients = [
     "from-emerald-500/20 to-teal-500/5 hover:to-teal-500/10 border-emerald-500/20",
@@ -600,8 +608,21 @@ function TaskSummaryCards({ summaries }: { summaries: { name: string, totalDurat
             )}
           >
             {/* Header */}
-            <h3 className="text-sm md:text-2xl font-bold tracking-tight text-foreground/90 group-hover:text-foreground transition-colors truncate w-full px-1" title={task.name}>
+            <h3 className="text-sm md:text-2xl font-bold tracking-tight text-foreground/90 group-hover:text-foreground transition-colors truncate w-full px-1 flex items-center justify-center gap-2 group-hover:translate-y-[-2px]" title={task.name}>
               {task.name}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const newName = prompt(`Rename task "${task.name}" to:`, task.name)
+                  if (newName && newName !== task.name) {
+                    onRename(task.name, newName)
+                  }
+                }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full"
+                title="Rename Task"
+              >
+                <Pencil className="w-3 h-3 md:w-4 md:h-4 text-foreground/70" />
+              </button>
             </h3>
 
             {/* Main Highlight: Today */}
@@ -784,7 +805,7 @@ function AboutModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void 
 // --- Main App Component ---
 function App() {
   const { time, isRunning, start, pause, reset } = useTimer()
-  const { records, addRecord, deleteRecord, clearHistory, exportCSV, getStats } = useHistory()
+  const records = useHistory()
   const { theme, toggleTheme } = useTheme()
   const [taskName, setTaskName] = useState(() => SafeStorage.getItem('current-task-name') || "Focus Time")
   const [toast, setToast] = useState<{ show: boolean, message: string }>({ show: false, message: '' })
@@ -795,7 +816,7 @@ function App() {
     SafeStorage.setItem('current-task-name', taskName)
   }, [taskName])
 
-  const stats = useMemo(() => getStats(), [getStats, records])
+  const stats = useMemo(() => records.getStats(), [records.getStats, records.records])
 
   useEffect(() => {
     if (toast.show) {
@@ -819,7 +840,7 @@ function App() {
     // Use business date (offsets 4AM)
     const dateStr = getBusinessDateStr(now)
 
-    addRecord({
+    records.addRecord({
       date: dateStr,
       startTime: startTimeStr,
       taskName: taskName || "Untitled Task",
@@ -828,7 +849,7 @@ function App() {
 
     setToast({ show: true, message: 'Effort Recorded!' })
     reset()
-  }, [time, pause, taskName, addRecord, reset])
+  }, [time, pause, taskName, records.addRecord, reset])
 
   const handleShare = useCallback(async () => {
     const shareData = {
@@ -985,10 +1006,10 @@ function App() {
 
             <div className="w-full max-w-4xl mt-8">
               <HistoryTable
-                records={records}
-                onDelete={deleteRecord}
-                onClear={clearHistory}
-                onExport={exportCSV}
+                records={records.records}
+                onDelete={records.deleteRecord}
+                onClear={records.clearHistory}
+                onExport={records.exportCSV}
               />
             </div>
           </div>
@@ -999,7 +1020,7 @@ function App() {
                 * Day resets at 4:00 AM
               </span>
             </div>
-            <TaskSummaryCards summaries={stats.taskSummaries} />
+            <TaskSummaryCards summaries={stats.taskSummaries} onRename={records.renameTask} />
             <EffortTrendChart data={stats.chartData} tasks={stats.topTasks} />
           </div>
         )}
