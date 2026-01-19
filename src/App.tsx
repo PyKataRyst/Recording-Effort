@@ -618,7 +618,7 @@ function TaskSummaryCards({ summaries, onRename }: { summaries: { name: string, 
                     onRename(task.name, newName)
                   }
                 }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full"
+                className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full"
                 title="Rename Task"
               >
                 <Pencil className="w-3 h-3 md:w-4 md:h-4 text-foreground/70" />
