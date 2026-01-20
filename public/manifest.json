@@ -1,6 +1,6 @@
 {
     "name": "Recording Effort",
-    "short_name": "Effort",
+    "short_name": "Recording Effort",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
