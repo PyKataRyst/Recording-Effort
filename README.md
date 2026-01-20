@@ -62,12 +62,16 @@ I built **Recording Effort** to serve as a "Cockpit" for my life. While task nam
    ```
    Access the app at `http://localhost:5173`.
 
-## Mobile Usage (iPhone)
+## Mobile Usage (iOS & Android)
 
-1. Ensure your PC and iPhone are on the same Wi-Fi.
-2. Run `npm run dev`. The terminal will show a Network URL (e.g., `http://192.168.x.x:5173`).
-3. Open Safari on iPhone and visit that URL.
-4. Tap "Share" -> "Add to Home Screen" to install as a standalone app.
+This app is a PWA (Progressive Web App). You can install it on your device for a native-like experience.
+
+1. **Network Setup**: Ensure your PC and smartphone are on the same Wi-Fi network.
+2. **Start Server**: Run `npm run dev`. The terminal will show a Network URL (e.g., `http://192.168.x.x:5173`).
+3. **Open Browser**: Visit that URL on your phone.
+4. **Install as App**:
+   - **iOS (Safari)**: Tap "Share" icon (square with arrow) -> "Add to Home Screen".
+   - **Android (Chrome)**: Tap the menu icon (three dots) -> "Add to Home Screen" or "Install App".
 
 ## License
 
