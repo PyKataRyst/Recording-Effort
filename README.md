@@ -25,6 +25,7 @@ I built **Recording Effort** to serve as a "Cockpit" for my life. While task nam
 - **⚡ Smart Shortcuts**: Auto-suggests frequently used task names for quick entry.
 - **📱 PWA Support**: Optimized for iPhone and mobile devices.
   - "Add to Home Screen" capable (standalone mode).
+  - **Background Sync**: Uses **Timestamp Delta Calculation** to maintain accuracy during sleep without interrupting background music or draining battery.
   - Lock screen timer integration (via Media Session API).
 - **🤝 Share**: Share the app with friends via native share sheet or clipboard.
 - **💾 Local Persistence**: All data remains in your browser's `localStorage`. No login or account required.
