@@ -897,7 +897,7 @@ function App() {
 
       <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
 
-      <header className="p-4 border-b border-white/10 bg-gray-900/80 backdrop-blur-md sticky top-0 z-50 transition-colors duration-300 text-white">
+      <header className="p-4 border-b border-gray-200 dark:border-white/10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-50 transition-colors duration-300 text-gray-900 dark:text-white">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock className="w-6 h-6 text-primary" />
@@ -906,14 +906,14 @@ function App() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setShowAbout(true)}
-              className="p-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-all"
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 hover:text-gray-900 dark:text-white/70 dark:hover:text-white transition-all"
               title="About this app"
             >
               <Info className="w-5 h-5" />
             </button>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-all"
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 hover:text-gray-900 dark:text-white/70 dark:hover:text-white transition-all"
               title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
             >
               {theme === 'light' ? (
