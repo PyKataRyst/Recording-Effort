@@ -608,21 +608,23 @@ function TaskSummaryCards({ summaries, onRename }: { summaries: { name: string, 
             )}
           >
             {/* Header */}
-            <h3 className="text-sm md:text-2xl font-bold tracking-tight text-foreground/90 group-hover:text-foreground transition-colors truncate w-full px-1 flex items-center justify-center gap-2 group-hover:translate-y-[-2px]" title={task.name}>
-              {task.name}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  const newName = prompt(`Rename task "${task.name}" to:`, task.name)
-                  if (newName && newName !== task.name) {
-                    onRename(task.name, newName)
-                  }
-                }}
-                className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full"
-                title="Rename Task"
-              >
-                <Pencil className="w-3 h-3 md:w-4 md:h-4 text-foreground/70" />
-              </button>
+            <h3 className="text-sm md:text-2xl font-bold tracking-tight text-foreground/90 group-hover:text-foreground transition-colors w-full px-1 flex items-center justify-center group-hover:translate-y-[-2px]" title={task.name}>
+              <span className="relative flex items-center justify-center max-w-[85%]">
+                <span className="truncate">{task.name}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const newName = prompt(`Rename task "${task.name}" to:`, task.name)
+                    if (newName && newName !== task.name) {
+                      onRename(task.name, newName)
+                    }
+                  }}
+                  className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 md:ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1 hover:bg-black/10 dark:hover:bg-white/10 rounded-full flex-shrink-0"
+                  title="Rename Task"
+                >
+                  <Pencil className="w-3 h-3 md:w-4 md:h-4 text-foreground/70" />
+                </button>
+              </span>
             </h3>
 
             {/* Main Highlight: Today */}
